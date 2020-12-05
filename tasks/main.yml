@@ -12,7 +12,7 @@
 - name: Add local user
   user:
     name: "{{ username }}"
-    group: "{{ username }}"
+    group: admin
     shell: /bin/bash
     home: "/home/{{ username }}"
     create_home: yes
