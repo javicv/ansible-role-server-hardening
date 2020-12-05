@@ -1,0 +1,56 @@
+---
+- name: Perform full patching
+  package:
+    name: '*'
+    state: latest
+
+- name: Add admin group
+  group:
+    name: admin
+    state: present
+
+- name: Add local user
+  user:
+    name: "{{ username }}"
+    group: "{{ username }}"
+    shell: /bin/bash
+    home: "/home/{{ username }}"
+    create_home: yes
+    state: present
+
+- name: Add SSH public key for user
+  authorized_key:
+    user: "{{ username }}"
+    key: "{{ public_key }}"
+    state: present
+
+- name: Add sudoer rule for local user
+  template:
+    dest: /etc/sudoers.d/{{ username }}
+    src: etc/sudoers.d/sudoer.jinja2
+    owner: root
+    group: root
+    mode: 0440
+    validate: /usr/sbin/visudo -csf %s
+
+- name: Add hardened SSH config
+  copy:
+    dest: /etc/ssh/sshd_config
+    src: etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: 0600
+  notify: Reload SSH
+
+- name: Remove undesirable packages
+  package:
+    name: "{{ unnecessary_software }}"
+    state: absent
+
+- name: Stop and disable unnecessary services
+  service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items: "{{ unnecessary_services }}"
+  ignore_errors: yes
